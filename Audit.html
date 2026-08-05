@@ -824,55 +824,21 @@
     });
   })();
 
-(function(){
-  const launcher = document.getElementById('chatLauncher');
-  const panel = document.getElementById('chatPanel');
-  const closeBtn = document.getElementById('chatClose');
-  const minBtn = document.getElementById('chatMin');
-  const head = panel.querySelector('.chat-head');
-  const body = document.getElementById('chatBody');
-  const input = document.getElementById('chatInput');
-  const sendBtn = document.getElementById('chatSend');
+  chatToggle.addEventListener('click', ()=>{
+    chatPanel.classList.toggle('open');
+    if(chatPanel.classList.contains('open')) chatInput.focus();
+  });
+  chatClose.addEventListener('click', ()=> chatPanel.classList.remove('open'));
+
   const sessionId = 'sess_' + Math.random().toString(36).slice(2, 11);
   let history = [];
 
-  function toggle(open){
-    panel.classList.toggle('open', open);
-    if(open){ input.focus(); }
-  }
-  function setMinimized(min){
-    panel.classList.toggle('minimized', min);
-    minBtn.setAttribute('aria-label', min ? 'Restore chat' : 'Minimize chat');
-    minBtn.innerHTML = min
-      ? '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 15L12 9L18 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-      : '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 12H19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
-    if(!min){ input.focus(); }
-  }
-  launcher.addEventListener('click', () => toggle(!panel.classList.contains('open')));
-  closeBtn.addEventListener('click', () => toggle(false));
-  minBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    setMinimized(!panel.classList.contains('minimized'));
-  });
-  head.addEventListener('click', () => {
-    if(panel.classList.contains('minimized')){ setMinimized(false); }
-  });
-
   function addMessage(text, role){
     const div = document.createElement('div');
-    div.className = 'msg ' + role;
+    div.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
     div.textContent = text;
-    body.appendChild(div);
-    body.scrollTop = body.scrollHeight;
-    return div;
-  }
-
-  function showTyping(){
-    const div = document.createElement('div');
-    div.className = 'msg bot typing-indicator';
-    div.innerHTML = '<span class="typing-dots"><span></span><span></span><span></span></span>';
-    body.appendChild(div);
-    body.scrollTop = body.scrollHeight;
+    chatBody.appendChild(div);
+    chatBody.scrollTop = chatBody.scrollHeight;
     return div;
   }
 
@@ -901,94 +867,30 @@
     }
   }
 
-  async function handleSend(){
-    const text = input.value.trim();
-    if(!text) return;
-    addMessage(text, 'user');
-    history.push({ role: 'user', text });
-    input.value = '';
-    sendBtn.disabled = true;
-
-    const typing = showTyping();
-    const reply = await sendToWebhook(text);
-    typing.remove();
-
-    addMessage(reply, 'bot');
-    history.push({ role: 'bot', text: reply });
-    sendBtn.disabled = false;
-  }
-
-  sendBtn.addEventListener('click', handleSend);
-  input.addEventListener('keydown', (e) => {
-    if(e.key === 'Enter'){ e.preventDefault(); handleSend(); }
-  });
-})();
-
-
-  chatToggle.addEventListener('click', ()=>{
-    chatPanel.classList.toggle('open');
-    if(chatPanel.classList.contains('open')) chatInput.focus();
-  });
-  chatClose.addEventListener('click', ()=> chatPanel.classList.remove('open'));
-
-  const SYSTEM_PROMPT = `You are the AI assistant on Andrew's Group's website, embedded in the landing page for their free AI Automation Audit service.
-Andrew's Group helps businesses automate repetitive tasks, respond to customers instantly, and increase productivity using AI and cloud solutions.
-The free audit is a no-obligation, 30-minute strategy session that includes: reviewing current business processes, identifying automation opportunities, estimating potential time savings, recommending AI and cloud solutions, and creating a practical implementation roadmap.
-How it works: 1) Book a call, 2) 30-minute business review, 3) Receive a custom automation plan, 4) Choose whether to have Andrew's Group implement it.
-They work with SMEs, service businesses, agencies, real estate companies, healthcare providers, professional firms, and growing enterprises.
-Keep replies concise (2-4 sentences), warm, and practical. If someone shows interest in booking, encourage them to fill in the contact form on this page. Do not invent pricing, guarantees, or specific timelines beyond what's stated here.`;
-
-  let history = [];
-
-  function addMessage(text, role){
-    const div = document.createElement('div');
-    div.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
-    div.textContent = text;
-    chatBody.appendChild(div);
-    chatBody.scrollTop = chatBody.scrollHeight;
-    return div;
-  }
-
   async function sendMessage(){
     const text = chatInput.value.trim();
     if(!text) return;
     addMessage(text, 'user');
-    history.push({role:'user', content: text});
+    history.push({ role: 'user', text });
     chatInput.value = '';
     chatSend.disabled = true;
 
     const typingEl = document.createElement('div');
-    typingEl.className = 'msg bot typing';
-    typingEl.textContent = 'Typing...';
+    typingEl.className = 'msg bot typing-indicator';
+    typingEl.innerHTML = '<span class="typing-dots"><span></span><span></span><span></span></span>';
     chatBody.appendChild(typingEl);
     chatBody.scrollTop = chatBody.scrollHeight;
 
-    try{
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 1000,
-          system: SYSTEM_PROMPT,
-          messages: history
-        })
-      });
-      const data = await response.json();
-      const reply = (data.content || []).map(b => b.text || '').join('\n').trim() || "Sorry, I couldn't quite process that — could you rephrase?";
-      typingEl.remove();
-      addMessage(reply, 'bot');
-      history.push({role:'assistant', content: reply});
-    }catch(err){
-      typingEl.remove();
-      addMessage("I'm having trouble connecting right now. Please use the form below to book your free audit, and we'll get back to you within one business day.", 'bot');
-    }finally{
-      chatSend.disabled = false;
-    }
+    const reply = await sendToWebhook(text);
+    typingEl.remove();
+
+    addMessage(reply, 'bot');
+    history.push({ role: 'bot', text: reply });
+    chatSend.disabled = false;
   }
 
   chatSend.addEventListener('click', sendMessage);
-  chatInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') sendMessage(); });
+  chatInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); sendMessage(); } });
 </script>
 
 </body>
