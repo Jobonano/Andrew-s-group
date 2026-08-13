@@ -8,6 +8,9 @@
 <meta property="og:image" content="https://www.vantage.andrew-s-group.com/preview.jpeg">
 <meta property="og:url" content="https://www.vantage.andrew-s-group.com">
 <meta property="og:type" content="website">
+<link rel="canonical" href="https://www.vantage.andrew-s-group.com/">
+<meta name="robots" content="index, follow">
+<link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Andrew's Vantage">
 <meta name="twitter:description" content="AI Automation for businesses.">
@@ -193,14 +196,16 @@
     cursor:pointer;
     flex-shrink:0;
   }
-  .nav-toggle svg{ width:18px; height:18px; }
+  .nav-toggle svg{ width:18px; height:18px; transition:transform .3s cubic-bezier(0.4,0,0.2,1); }
   .nav-toggle:hover{ border-color:var(--line); }
+  .nav-toggle:active svg{ transform:scale(0.85) rotate(90deg); }
+  .nav-toggle[aria-expanded="true"] svg{ transform:rotate(90deg); }
 
   @media (max-width: 900px){
     .nav-toggle{ display:flex; }
     .nav-cta{ display:none; }
     nav.nav-links{
-      display:none;
+      display:flex;
       position:absolute;
       top:100%; left:0; right:0;
       flex-direction:column;
@@ -208,14 +213,48 @@
       background:rgba(8,24,38,0.98);
       backdrop-filter:blur(10px);
       border-bottom:1px solid rgba(111,199,206,0.18);
-      padding:8px 0;
+      padding:0 0;
+      max-height:0;
+      opacity:0;
+      overflow:hidden;
+      visibility:hidden;
+      transform:translateY(-6px);
+      transition:max-height .38s cubic-bezier(0.4,0,0.2,1),
+                 opacity .28s ease,
+                 transform .3s cubic-bezier(0.4,0,0.2,1),
+                 visibility 0s linear .4s,
+                 padding .38s cubic-bezier(0.4,0,0.2,1);
     }
-    nav.nav-links.mobile-open{ display:flex; }
+    nav.nav-links.mobile-open{
+      max-height:80vh;
+      opacity:1;
+      visibility:visible;
+      transform:translateY(0);
+      padding:8px 0;
+      transition:max-height .4s cubic-bezier(0.4,0,0.2,1),
+                 opacity .32s ease,
+                 transform .34s cubic-bezier(0.4,0,0.2,1),
+                 visibility 0s linear 0s,
+                 padding .4s cubic-bezier(0.4,0,0.2,1);
+    }
     nav.nav-links a{
       padding:14px 32px;
       font-size:0.9rem;
       border-top:1px solid rgba(111,199,206,0.1);
+      opacity:0;
+      transform:translateX(-8px);
+      transition:opacity .3s ease, transform .3s ease;
     }
+    nav.nav-links.mobile-open a{
+      opacity:1;
+      transform:translateX(0);
+    }
+    nav.nav-links.mobile-open a:nth-child(1){ transition-delay:.06s; }
+    nav.nav-links.mobile-open a:nth-child(2){ transition-delay:.10s; }
+    nav.nav-links.mobile-open a:nth-child(3){ transition-delay:.14s; }
+    nav.nav-links.mobile-open a:nth-child(4){ transition-delay:.18s; }
+    nav.nav-links.mobile-open a:nth-child(5){ transition-delay:.22s; }
+    nav.nav-links.mobile-open a:nth-child(6){ transition-delay:.26s; }
     nav.nav-links a:first-child{ border-top:none; }
     nav.nav-links a.nav-links-cta{
       display:block;
@@ -227,6 +266,9 @@
       border-top:none;
       border-radius:2px;
       text-align:center;
+    }
+    .nav-toggle svg path{
+      transition:d .25s ease;
     }
     header.site-nav{ position:sticky; }
     .nav-inner{ position:relative; }
